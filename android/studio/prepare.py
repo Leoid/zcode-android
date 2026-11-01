@@ -1,5 +1,5 @@
 from pathlib import Path
-import json,shutil,os
+import json,shutil,os,subprocess
 root=Path(__file__).resolve().parents[2]/'ZCode'
 stage=Path(__file__).resolve().parents[1]/'build/studio'
 stage.mkdir(parents=True,exist_ok=True)
@@ -26,3 +26,5 @@ for f in ['package.json','THIRD-PARTY-NOTICES.md','NOTICE.md','tsconfig.base.jso
 p=json.loads((stage/'package.json').read_text()); (stage/'source-package.json').write_text(json.dumps(p))
 (stage/'package.json').write_text(json.dumps({'private':True,'version':p['version'],'type':'module','dependencies':deps}))
 (stage/'links.json').write_text(json.dumps({n:str(packages[n][1].relative_to(root)) for n in seen}))
+
+subprocess.run(["patch","--batch","--forward","-p1","-i", str(Path(__file__).with_name("composer-ime.patch").resolve())],cwd=stage,check=True)
