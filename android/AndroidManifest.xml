@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.zcode.android" android:versionCode="3" android:versionName="3.17.1-android.3">
+ <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="28"/>
+ <uses-permission android:name="android.permission.INTERNET"/>
+ <application android:icon="@drawable/zcode" android:label="ZCode" android:allowBackup="false" android:debuggable="true" android:theme="@android:style/Theme.Material.NoActionBar">
+ <activity android:name=".Studio" android:launchMode="singleTask" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden" android:windowSoftInputMode="adjustResize"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><activity android:name=".FilesScreen" android:exported="false"/><activity android:name=".TerminalScreen" android:exported="false" android:windowSoftInputMode="adjustResize"/>
+ </application></manifest>

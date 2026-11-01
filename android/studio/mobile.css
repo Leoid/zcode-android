@@ -1,0 +1,8 @@
+@media(max-width:700px){
+ [data-workspace-sidebar-panel]{position:absolute!important;inset:0 auto 0 0!important;z-index:45!important;background:var(--background,#19191c);width:min(82vw,320px)!important;max-width:90vw!important;transition:transform .18s ease!important;transform:translateX(-105%)}
+ html.android-history [data-workspace-sidebar-panel]{transform:none}
+ [data-workspace-sidebar-panel]+[role=separator]{display:none!important}
+ [data-testid=desktop-top-nav-back],[data-testid=desktop-top-nav-forward],[data-testid=desktop-top-nav-new-task]{display:none!important}
+ [role=dialog]{max-width:calc(100vw - 12px)!important;max-height:95dvh!important}
+ [data-testid=v4-composer] form{min-width:0!important}
+}

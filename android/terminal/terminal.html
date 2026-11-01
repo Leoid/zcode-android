@@ -1,0 +1,16 @@
+<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none';script-src 'self' 'unsafe-inline';style-src 'self' 'unsafe-inline'">
+<link rel="stylesheet" href="xterm.css"><style>body{background:#101419;color:white;margin:6px}button{color:white;background:#293341;padding:8px;border:0;margin:2px}</style>
+<div id="controls"></div><div id="console"></div><script src="xterm.js"></script>
+<script>
+const term=new Terminal({fontSize:13,theme:{background:'#101419'},scrollback:1500});
+term.open(document.querySelector('#console'));
+const controls=document.querySelector('#controls');
+for(const [label,data] of [['Ctrl-C','\x03'],['Tab','\t'],['Esc','\x1b'],['↑','\x1b[A'],['↓','\x1b[B']]){
+ const b=document.createElement('button');b.textContent=label;b.onclick=()=>{Shell.send(data);term.focus()};controls.appendChild(b);
+}
+function resize(){const box=document.querySelector('.xterm-screen').getBoundingClientRect();
+ if(box.width&&box.height)term.resize(Math.max(12,Math.floor((innerWidth-14)/(box.width/term.cols))),Math.max(4,Math.floor((innerHeight-controls.offsetHeight-18)/(box.height/term.rows))));}
+resize();window.onresize=resize;
+term.onData(data=>Shell.send(data));window.receive=data=>term.write(Uint8Array.from(atob(data),ch=>ch.charCodeAt(0)));
+Shell.start(term.rows,term.cols);term.focus();
+</script>
