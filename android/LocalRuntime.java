@@ -1,11 +1,11 @@
 package dev.zcode.android;
 
-import android.app.Activity;
+import android.content.Context;
 import java.util.Map;
 import java.io.File;
 
 final class LocalRuntime {
-    static void environment(Activity activity,ProcessBuilder pb,File runtime){
+    static void environment(Context activity,ProcessBuilder pb,File runtime){
         Map<String,String> env=pb.environment();
         File home=activity.getFilesDir();
         pb.directory(new File(home,"workspace")).redirectErrorStream(true);

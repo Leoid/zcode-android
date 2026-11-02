@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {androidNetworkErrors} from './retry-overlay.mjs';
 import path from 'node:path';
 const src = path.resolve('../ZCode');
 const packages = new Map();
@@ -32,5 +33,5 @@ fs.mkdirSync('build',{recursive:true});
 fs.writeFileSync('build/package.json',JSON.stringify({private:true,dependencies:deps},null,2));
 if(process.argv.includes('--bundle')){
  const {build}=await import('./build/node_modules/esbuild/lib/main.js');
- await build({entryPoints:[src+'/apps/zcode-cli/packages/cli/src/main.ts'],bundle:true,platform:'node',format:'cjs',target:'node24',alias:aliases,nodePaths:[path.resolve('build/node_modules')],external:['@zcode/tui','playwright-core','koffi'],define:{__CLI_VERSION__:JSON.stringify(JSON.parse(fs.readFileSync(src+'/apps/zcode-cli/package.json')).version)},outfile:'build/assets/zcode.cjs'});
+ await build({entryPoints:[src+'/apps/zcode-cli/packages/cli/src/main.ts'],plugins:[androidNetworkErrors],bundle:true,platform:'node',format:'cjs',target:'node24',alias:aliases,nodePaths:[path.resolve('build/node_modules')],external:['@zcode/tui','playwright-core','koffi'],define:{__CLI_VERSION__:JSON.stringify(JSON.parse(fs.readFileSync(src+'/apps/zcode-cli/package.json')).version)},outfile:'build/assets/zcode.cjs'});
 }

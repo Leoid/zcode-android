@@ -4,7 +4,7 @@ Open ZCode on the phone. **Chats** opens the project and conversation drawer. **
 
 The chat, tool approvals, model selection, settings, projects and task history come from the sibling ZCode source. Use **Manage models → Add provider** for an upstream preset or **Create custom provider**. Set its URL, API format, key and model ID. The configurable wire formats are OpenAI Chat Completions, OpenAI Responses, and Anthropic Messages. Compatible local inference servers also work if reachable from the phone. The upstream welcome dialog offers **Use API key → Skip for now** to enter the workspace before configuring a provider.
 
-No desktop server or ADB connection is required at runtime. Android limits long-running background processes. The app and its shell share the Android app UID. Files elsewhere can be imported through the document picker. The mobile build uses the upstream Web client; desktop-only integrations such as Electron window automation, desktop browser control and platform-specific plugins are not portable as-is.
+No desktop server or ADB connection is required at runtime. A foreground service keeps the workspace running when you switch apps. To shut it down, use the notification’s **Close workspace** action or remove ZCode from Recents. The app and its shell share the Android app UID. Files elsewhere can be imported through the document picker. The mobile build uses the upstream Web client; desktop-only integrations such as Electron window automation, desktop browser control and platform-specific plugins are not portable as-is.
 
 ## Build and install
 

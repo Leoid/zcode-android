@@ -1,6 +1,8 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.zcode.android" android:versionCode="4" android:versionName="3.17.1-android.4">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.zcode.android" android:versionCode="5" android:versionName="3.17.1-android.5">
  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="28"/>
  <uses-permission android:name="android.permission.INTERNET"/>
+ <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
  <application android:icon="@drawable/zcode" android:label="ZCode" android:allowBackup="false" android:debuggable="true" android:theme="@android:style/Theme.Material.NoActionBar">
+ <service android:name=".WorkspaceService" android:exported="false" android:stopWithTask="true"/>
  <activity android:name=".Studio" android:launchMode="singleTask" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden" android:windowSoftInputMode="adjustResize"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><activity android:name=".FilesScreen" android:exported="false"/><activity android:name=".TerminalScreen" android:exported="false" android:windowSoftInputMode="adjustResize"/>
  </application></manifest>

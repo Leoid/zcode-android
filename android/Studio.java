@@ -1,7 +1,8 @@
 package dev.zcode.android;
 
 import android.app.Activity;
-import android.content.Intent;
+import android.content.*;
+import android.os.IBinder;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -17,12 +18,32 @@ public class Studio extends Activity {
     static final String RUNTIME="studio-v3";
     private WebView web;
     private TextView status;
-    private volatile Process host;
+    private WorkspaceService.Session session;
+    private boolean bound;
+    private final WorkspaceService.Listener listener=this::workspaceChanged;
+    private final ServiceConnection connection=new ServiceConnection(){
+        public void onServiceConnected(ComponentName name,IBinder binder){session=(WorkspaceService.Session)binder;session.attach(listener);}
+        public void onServiceDisconnected(ComponentName name){session=null;ready=false;status.setText("Workspace disconnected");status.setVisibility(android.view.View.VISIBLE);}
+    };
+    private void workspaceChanged(String address,String credential,String error){
+        if(closing)return;
+        if(error!=null){
+            ready=false;status.setText(error);status.setVisibility(android.view.View.VISIBLE);
+            if("Workspace closed".equals(error))finishAndRemoveTask();
+            return;
+        }
+        origin=address;
+        android.webkit.CookieManager.getInstance().setCookie(origin,"zcode_lite_token="+credential+"; HttpOnly; SameSite=Strict; Path=/",ok->{
+            if(closing)return;
+            if(!ok){status.setText("Workspace authentication failed");return;}
+            ready=true;web.loadUrl(origin+"/");status.setVisibility(android.view.View.GONE);
+        });
+    }
     private String origin;
     private volatile boolean closing;
     private volatile boolean ready;
     private ValueCallback<Uri[]> chooser;
-    private final String token=UUID.randomUUID().toString()+UUID.randomUUID();
+
 
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
@@ -51,7 +72,9 @@ public class Studio extends Activity {
         status.setGravity(Gravity.CENTER);
         status.setText("ZCode\n\nOpening your workspace…");
         frame.addView(status);setContentView(screen);
-        new Thread(this::startHost,"zcode-studio").start();
+        Intent host=new Intent(this,WorkspaceService.class);
+        startForegroundService(host);
+        bound=bindService(host,connection,BIND_AUTO_CREATE);
     }
     void nav(LinearLayout bar,String name,Runnable run){
         Button b=new Button(this,null,android.R.attr.borderlessButtonStyle);b.setTextSize(13);b.setText(name);b.setAllCaps(false);b.setContentDescription(name);b.setOnClickListener(v->{if(ready)run.run();});bar.addView(b,new LinearLayout.LayoutParams(0,-2,1));
@@ -77,67 +100,6 @@ public class Studio extends Activity {
         super.onActivityResult(request,result,data);
         if(request==21 && chooser!=null){chooser.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result,data));chooser=null;}
     }
-    void unpack(String asset,File root)throws IOException{
-        try(ZipInputStream in=new ZipInputStream(getAssets().open(asset))){
-            ZipEntry entry;
-            while((entry=in.getNextEntry())!=null){
-                File path=new File(root,entry.getName());
-                if(!path.getCanonicalPath().startsWith(root.getCanonicalPath()+"/"))throw new IOException("Invalid asset path");
-                if(entry.isDirectory()){path.mkdirs();continue;}
-                path.getParentFile().mkdirs();
-                Files.copy(in,path.toPath(),StandardCopyOption.REPLACE_EXISTING);
-                if(entry.getName().startsWith("bin/")||entry.getName().startsWith("libexec/"))path.setExecutable(true,true);
-            }
-        }
-    }
-    private void startHost(){
-        try{
-            File home=getFilesDir(), rt=new File(home,RUNTIME);
-            File marker=new File(rt,"ready-"+getPackageManager().getPackageInfo(getPackageName(),0).lastUpdateTime);
-            if(!marker.exists()){
-                rt.mkdirs();unpack("runtime.zip",rt);unpack("studio.zip",rt);
-                for(String name:new String[]{"zcode.cjs","builtin.json","zcode","pty"}){
-                    File dest=new File(rt,name.equals("zcode")||name.equals("pty")?"bin/"+name:name);
-                    try(InputStream i=getAssets().open(name)){Files.copy(i,dest.toPath(),StandardCopyOption.REPLACE_EXISTING);}
-                    if(dest.getParentFile().getName().equals("bin"))dest.setExecutable(true,true);
-                }
-                marker.createNewFile();
-            }
-            File workspace=new File(home,"workspace");workspace.mkdirs();
-            int port=getPreferences(0).getInt("port",0);
-            if(port==0){try(ServerSocket probe=new ServerSocket(0,1,InetAddress.getByName("127.0.0.1"))){port=probe.getLocalPort();}
-                getPreferences(0).edit().putInt("port",port).apply();}
-            origin="http://127.0.0.1:"+port;
-            File node=new File(rt,"bin/node");
-            ProcessBuilder pb=new ProcessBuilder(node.toString(),new File(rt,"host.mjs").toString());
-            LocalRuntime.environment(this,pb,rt);
-            Map<String,String> env=pb.environment();
-            env.put("LANG",Locale.getDefault().toLanguageTag().replace('-','_')+".UTF-8");
-            env.remove("ZCODE_PERSONAL_PROVIDER_CONFIG_FILE");
-            env.put("PORT",String.valueOf(port));env.put("ZCODE_SERVER_HOST","127.0.0.1");
-            env.put("ZCODE_SERVER_AUTH_TOKEN",token);env.put("ZCODE_WEB_STATIC_ROOT",new File(rt,"web").toString());
-            env.put("ZCODE_SERVER_WORKSPACE",workspace.toString());
-            env.put("ZCODE_AGENT_SERVER_COMMAND",node.toString());
-            env.put("ZCODE_AGENT_SERVER_ARGS_JSON",new org.json.JSONArray().put(new File(rt,"zcode.cjs").toString()).put("app-server").put("--stdio").toString());
-            File diagnostic=new File(getCacheDir(),"studio.log");
-            pb.redirectOutput(diagnostic);
-            host=pb.start();
-            while(!closing && host.isAlive()){
-                HttpURLConnection c=(HttpURLConnection)new URL(origin+"/api/server-info").openConnection();
-                c.setRequestProperty("Authorization","Bearer "+token);
-                c.setConnectTimeout(500);c.setReadTimeout(1000);
-                try{if(c.getResponseCode()==200)break;}catch(IOException ignored){}finally{c.disconnect();}
-                Thread.sleep(150);
-            }
-            if(closing){host.destroy();return;}
-            if(!host.isAlive())throw new IOException("Workspace service exited. "+new String(Files.readAllBytes(diagnostic.toPath())));
-            runOnUiThread(()->android.webkit.CookieManager.getInstance().setCookie(origin,"zcode_lite_token="+token+"; HttpOnly; SameSite=Strict; Path=/",ok->{
-                if(closing)return;
-                if(!ok){status.setText("Workspace authentication failed");return;}
-                ready=true;web.loadUrl(origin+"/");status.setVisibility(android.view.View.GONE);
-            }));
-        }catch(Exception e){runOnUiThread(()->status.setText("Could not open ZCode\n\n"+e.getMessage()));}
-    }
     @Override public void onBackPressed(){web.evaluateJavascript("(()=>{const back=document.querySelector('[data-testid=settings-back-button]');if(back){back.click();return true;}return document.documentElement.classList.contains('android-history')&&(document.documentElement.classList.remove('android-history'),true);})()",handled->{if(!"true".equals(handled)){if(web.canGoBack())web.goBack();else moveTaskToBack(true);}});}
-    @Override protected void onDestroy(){closing=true;if(host!=null)host.destroy();web.destroy();super.onDestroy();}
+    @Override protected void onDestroy(){closing=true;if(session!=null)session.detach(listener);if(bound)unbindService(connection);web.destroy();super.onDestroy();}
 }

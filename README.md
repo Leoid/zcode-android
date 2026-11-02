@@ -31,7 +31,7 @@ The app runs its own local server and agent. USB and a desktop computer are only
 
 The APK embeds the upstream ZCode web client, Node.js runtime, project services, and Agent CLI. The Android activity opens the client in a WebView and authenticates it to a loopback server. When a model requests a tool, the agent executes it under the app’s Android user ID. The terminal uses a native pseudo-terminal; the file browser uses Android’s document picker to move files across the sandbox boundary.
 
-The port reuses ZCode’s chat and settings screens. Desktop-specific features such as Electron window control, desktop browser automation, and plugins with incompatible native binaries have platform limitations. Long-running jobs follow Android’s process lifecycle.
+The port reuses ZCode’s chat and settings screens. Desktop-specific features such as Electron window control, desktop browser automation, and plugins with incompatible native binaries have platform limitations. The local workspace runs as an Android foreground service while it is open. You can switch apps during a request. Use **Close workspace** in the notification or remove ZCode from Recents to end the workspace.
 
 ## Build from source
 

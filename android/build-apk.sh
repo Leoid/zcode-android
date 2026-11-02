@@ -18,7 +18,7 @@ cp terminal/{xterm.js,xterm.css,terminal.html} build/assets/
 cp terminal/LICENSE build/assets/XTERM-LICENSE
 cc=( "$sdk"/ndk/*/toolchains/llvm/prebuilt/*/bin/aarch64-linux-android26-clang )
 "${cc[0]}" -O2 -Wl,-z,max-page-size=16384 terminal/pty.c -o build/assets/pty
-"$(/usr/libexec/java_home -v 1.8)/bin/javac" -source 8 -target 8 -classpath "$platform" -d build/classes Studio.java FilesScreen.java LocalRuntime.java TerminalScreen.java
+"$(/usr/libexec/java_home -v 1.8)/bin/javac" -source 8 -target 8 -classpath "$platform" -d build/classes Studio.java WorkspaceService.java FilesScreen.java LocalRuntime.java TerminalScreen.java
 "$bt/d8" --min-api 26 --lib "$platform" --output build/dex build/classes/dev/zcode/android/*.class
 manifest=AndroidManifest.xml
 if [ "$variant" = release ]; then
